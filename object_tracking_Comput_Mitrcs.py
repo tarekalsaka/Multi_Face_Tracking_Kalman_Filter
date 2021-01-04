@@ -141,10 +141,10 @@ def main():
               while line and nb_frame == int(line[0]): #finchè il numero della linea 0 rimane il frame corrente
                   coord_GT.append((int(float(line[2])),int(float(line[3])), int(float(line[4]))
                                    ,int(float(line[5]))))
-                  cv2.rectangle(frame, (int(float(line[2])),int(float(line[3]))),
-                                (int(float(line[2]))+int(float(line[4])),
-                                 int(float(line[3]))+int(float(line[5]))),
-                                color=(255,255,255), thickness = 2)
+                  # cv2.rectangle(frame, (int(float(line[2])),int(float(line[3]))),
+                  #               (int(float(line[2]))+int(float(line[4])),
+                  #                int(float(line[3]))+int(float(line[5]))),
+                  #               color=(255,255,255), thickness = 2)
                   line = f.readline() #for the next cycle
                   if line:
                     line = line.split(',') 
@@ -154,53 +154,58 @@ def main():
               # Detect and return centeroids of the objects in the frame
               centers, coord = detector.Detect(frame)
               coord = list(non_max_suppression_fast(coord, 0.3))
-              for i in range(len(coord)):
-                  tmp_coord = coord[i]
-                  # cv2.rectangle(frame, (tmp_coord[0], tmp_coord[1]), 
-                  #               (tmp_coord[0]+tmp_coord[2],tmp_coord[1]+tmp_coord[3]),
-                  #               color = (0, 255, 0), thickness=2)
+              # for i in range(len(coord)):
+              #     tmp_coord = coord[i]
+              #     cv2.rectangle(frame, (tmp_coord[0], tmp_coord[1]), 
+              #                    (tmp_coord[0]+tmp_coord[2],tmp_coord[1]+tmp_coord[3]),
+              #                    color = (0, 255, 0), thickness=2)
                   
-                  
+              tracked_box=[]
 
               # If centroids are detected then track them
 
               if (len(centers) > 0):
-                    # Track object using Kalman Filter
-                    tracker.Update(centers)
-                    # For identified object tracks draw tracking line
-                    # Use various colors to indicate different track_id
-                    for i in range(len(tracker.tracks)):
-                        if (len(tracker.tracks[i].trace) > 1):
-                            try:
-                                for j in range(len(tracker.tracks[i].trace)-1):
-                                    # Draw trace line
-                                    x1 = tracker.tracks[i].trace[j][0][0]
-                                    y1 = tracker.tracks[i].trace[j][1][0]
-                                    x2 = tracker.tracks[i].trace[j+1][0][0]
-                                    y2 = tracker.tracks[i].trace[j+1][1][0]
-                                    clr = tracker.tracks[i].track_id % 9
-                                    # cv2.line(frame, (int(x1), int(y1)), (int(x2), int(y2)),
-                                    #          track_colors[clr], 2)
-                                    cv2.rectangle(frame,(int(x2)-int(coord[j][2]/2), int(y2)-int(coord[j][3]/2)),
-                                                  (int(x2)+int(coord[j][2]/2), int(y2)+int(coord[j][3]/2)),
-                                                  color = (0, 255, 100), thickness=2)
-                                    
-                            except :
-                                pass
+                # Track object using Kalman Filter
+                tracker.Update(centers)
+                # For identified object tracks draw tracking line
+                # Use various colors to indicate different track_id
+                try:
+
+                  for i in range(len(tracker.tracks)):
+                      if (len(tracker.tracks[i].trace) > 1):
+                        for j in range(len(tracker.tracks[i].trace)-1):
+                            # Draw trace line
+                            x1 = tracker.tracks[i].trace[j][0][0]
+                            y1 = tracker.tracks[i].trace[j][1][0]
+                            x2 = tracker.tracks[i].trace[j+1][0][0]
+                            y2 = tracker.tracks[i].trace[j+1][1][0]
+                            clr = tracker.tracks[i].track_id % 9
+                            # cv2.line(frame, (int(x1), int(y1)), (int(x2), int(y2)),
+                            #          track_colors[clr], 2)
+                      # cv2.rectangle(frame,(int(x2)-int(coord[i][2]/2), int(y2)-int(coord[i][3]/2)),
+                      #               (int(x2)+int(coord[i][2]/2), int(y2)+int(coord[i][3]/2)),
+                      #               color = (255, 0, 0), thickness=2)
+                      tbox=[int(x2)-int(coord[i][2]/2), int(y2)-int(coord[i][3]/2),int(coord[i][2]),int(coord[i][3])]
+                      tracked_box.append(tbox)
+                      
+                      
+                                
+                except:
+                  pass
               
               
               total_faces += len(coord_GT)
-    #          print('detected coordinates')
-    #          print(coord)
-    #          print('ground_truth coordinates')
-    #          print(coord_GT)
-    #          print('##################################')
-              if len(coord) != 0:
-                  for i in range(len(coord)):
+              # print('detected coordinates')
+              # print(coord)
+              # print('ground_truth coordinates')
+              # print(coord_GT)
+              # print('##################################')
+              if len(tracked_box) != 0:
+                  for i in range(len(tracked_box)):
                       iou = []
                       for j in range(len(coord_GT)):
-                          iou.append(bb_intersection_over_union(coord[i], coord_GT[j]))
-    #                      print(iou)
+                          iou.append(bb_intersection_over_union(tracked_box[i], coord_GT[j]))
+                          # print(iou)
                       if checkiou(iou) == False:
     #                      value_greater_than_thresh = [k for k in iou if k>0]
     #                      print(value_greater_than_thresh)
@@ -216,11 +221,11 @@ def main():
               
          
                   # Display the resulting tracking frame
-              cv2.imshow('Tracking', frame)
-               # nb_frame +=1
-            # Press Q on keyboard to  exit
-              if cv2.waitKey(10) & 0xFF == ord('q'):
-                  break
+            #   cv2.imshow('Tracking', frame)
+            #    # nb_frame +=1
+            # # Press Q on keyboard to  exit
+            #   if cv2.waitKey(1) & 0xFF == ord('q'):
+            #       break
           
     
 
